@@ -77,9 +77,11 @@ impl fmt::Display for OrderSide {
     }
 }
 
+/// Market kind for Borsh signing (perps only)
+/// NOTE: This enum only contains Perp because this SDK is perps-only.
+/// The discriminant must be 0 for Perp to match the signing scripts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 pub enum MarketKind {
-    Spot,
     Perp,
 }
 

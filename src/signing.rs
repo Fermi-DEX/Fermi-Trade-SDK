@@ -73,18 +73,12 @@ pub struct OrderIntentDto {
     pub leverage: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position_effect: Option<String>,
-    #[serde(default, skip_serializing_if = "is_false")]
     pub reduce_only: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub margin_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub margin_amount: Option<u64>,
-    #[serde(default, skip_serializing_if = "is_false")]
     pub liquidation: bool,
-}
-
-fn is_false(b: &bool) -> bool {
-    !*b
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -165,20 +159,24 @@ pub fn sign_perp_order(
 
     // 2. Create signing message: PREFIX + Borsh(intent)
     let mut data = SIGNED_ORDER_PREFIX.to_vec();
-    data.extend(
-        perp_intent
-            .try_to_vec()
-            .map_err(|e| SdkError::Serialization(format!("Borsh serialization failed: {}", e)))?,
-    );
+    let borsh_bytes = perp_intent
+        .try_to_vec()
+        .map_err(|e| SdkError::Serialization(format!("Borsh serialization failed: {}", e)))?;
+
+    tracing::debug!("Borsh serialized bytes ({} bytes): {:02x?}", borsh_bytes.len(), &borsh_bytes[..std::cmp::min(100, borsh_bytes.len())]);
+    data.extend(borsh_bytes);
 
     // 3. Hash: SHA256(data) -> hex string -> UTF-8 bytes
     let hash = Sha256::digest(&data);
     let hex_string = hex::encode(hash);
     let message = hex_string.as_bytes();
 
+    tracing::debug!("Order SHA256 hash: {}", hex_string);
+
     // 4. Sign the message bytes
     let signature = keypair.sign(message);
     let signature_hex = hex::encode(signature);
+    tracing::debug!("Order signature: {}", signature_hex);
 
     // 5. Build the JSON request DTO
     let dto = OrderIntentDto {

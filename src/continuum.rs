@@ -98,7 +98,9 @@ impl ContinuumClient {
         }
         let frm_transaction = serde_json::Value::Object(frm_fields);
 
-        let payload = format!("FRM_v1.0:{}", frm_transaction).into_bytes();
+        let payload_str = format!("FRM_v1.0:{}", frm_transaction);
+        debug!("Order FRM payload: {}", payload_str);
+        let payload = payload_str.into_bytes();
 
         let transaction = Transaction {
             tx_id: tx_id.clone(),
